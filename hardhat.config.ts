@@ -57,7 +57,7 @@ const config: HardhatUserConfig = {
             //     blockNumber: 15050841,
             // },
         },
-        // mainnet: defaultNetworkConfig,
+        mainnet: defaultNetworkConfig,
         // ropsten: defaultNetworkConfig,
         // rinkeby: defaultNetworkConfig,
         // kovan: defaultNetworkConfig,
