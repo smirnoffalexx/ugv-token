@@ -1,13 +1,12 @@
-# Sample Hardhat Project
+# UGV Token Project
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, and a script that deploys that contract.
+This project contains migration of YCO token from Ethererum mainnet to Polygon as UGV token with following features: staking and vesting. There are contracts, deploy scripts and migration scritps which get YCO holders, check their balances and transfer equivalent UGV value to holders in Polygon. 
 
-Try running some of the following tasks:
+The following commands are used while development and deployment:
 
 ```shell
-npx hardhat help
-npx hardhat test
-REPORT_GAS=true npx hardhat test
-npx hardhat node
-npx hardhat run scripts/deploy.ts
+yarn hardhat compile
+yarn hardhat deploy --network polygon
+yarn hardhat test
+yarn hardhat run scripts/getBalances.ts
 ```
