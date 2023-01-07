@@ -5,6 +5,7 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract UGVStaking {
+    uint256 public constant SECONDS_IN_YEAR = 3600 * 24 * 365;
     uint256 public constant FREE_PERCENTAGE = 3;
     uint256 public constant PARTIAL_PERCENTAGE = 30;
     uint256 public constant MAXIMA_PERCENTAGE = 100;
@@ -26,6 +27,8 @@ contract UGVStaking {
         uint256 start;
         uint256 duration;
         uint256 APY;
+        uint256 reward;
+        uint256 lastWithdrawal;
     }
 
     IERC20 public ugvToken;
@@ -34,17 +37,9 @@ contract UGVStaking {
 
     mapping(address => uint256) public stakedAmounts;
 
-    uint256 internal allStakes;
-
-    uint256 constant internal _magnitude = 2**128;
-
-    uint256 internal _magnifiedRewardPerStake = 0; 
-
-    mapping(address => int256) internal _magnifiedRewardCorrections;
+    uint256 public totalStaked;
 
     mapping(address => uint256) internal _withdrawals;
-
-    mapping(address => uint256) public lockedBalances;
 
     mapping(address => StakeData) public stakeData;
 
@@ -53,6 +48,8 @@ contract UGVStaking {
     event Staked(address account, uint256 amount);
 
     event Unstaked(address account, uint256 amount);
+
+    event RewardWithdrawn(address account, uint256 amount);
 
     event DividendsDistributed(uint256 amount);
 
@@ -68,102 +65,116 @@ contract UGVStaking {
         require(amount > 0, "Staking amount could not be zero");
         ugvToken.transferFrom(msg.sender, address(this), amount);
 
+        uint256 duration;
+        uint256 percentage;
+
+        if (stakeData[msg.sender].amount > 0) {
+            amount += stakeData[msg.sender].amount;
+        }
+
         if (stakeType == StakeType.Free) {
-            stakeData[msg.sender] = StakeData({
-                stakeType: StakeType.Free,
-                amount: amount,
-                start: block.timestamp,
-                duration: 0,
-                APY: FREE_PERCENTAGE
-            });
+            duration = 0;
+            percentage = FREE_PERCENTAGE;
         }
 
         if (stakeType == StakeType.Partial) {
-            if (stakeData[msg.sender].amount > 0) {
-                amount += stakeData[msg.sender].amount;
-            }
-            stakeData[msg.sender] = StakeData({
-                stakeType: StakeType.Partial,
-                amount: amount,
-                start: block.timestamp,
-                duration: 30 days,
-                APY: PARTIAL_PERCENTAGE
-            });
-            lockedBalances[msg.sender] += amount;
+            duration = 30 days;
+            percentage = PARTIAL_PERCENTAGE;
         }
 
         if (stakeType == StakeType.Maxima) {
-            if (stakeData[msg.sender].amount > 0) {
-                amount += stakeData[msg.sender].amount;
-            }
-            stakeData[msg.sender] = StakeData({
-                stakeType: StakeType.Maxima,
-                amount: amount,
-                start: block.timestamp,
-                duration: 90 days,
-                APY: MAXIMA_PERCENTAGE
-            });
-            lockedBalances[msg.sender] += amount;
+            duration = 90 days;
+            percentage = MAXIMA_PERCENTAGE;
         }
         
-        stakedAmounts[msg.sender] += amount;
-        _magnifiedRewardCorrections[msg.sender] -= int256(_magnifiedRewardPerStake * amount);
-        allStakes += amount;
+        stakeData[msg.sender] = StakeData({
+            stakeType: stakeType,
+            amount: amount,
+            start: block.timestamp,
+            duration: duration,
+            APY: percentage,
+            reward: accumulativeRewardOf(msg.sender),
+            lastWithdrawal: block.timestamp
+        });
+
+        totalStaked += amount;
 
         emit Staked(msg.sender, amount);
     }
 
-    function unstake2() external {
-        uint256 amount = stakedAmounts[msg.sender];
+    function unstake() external {
+        StakeData memory _stakeData = stakeData[msg.sender];
+        uint256 amount = _stakeData.amount;
         require(amount > 0, "Nothing to unstake");
-        
-        stakedAmounts[msg.sender] = 0;
+        require(
+            block.timestamp >= _stakeData.duration + _stakeData.start, 
+            "Tokens are locked"
+        );
+
+        totalStaked -= amount;
+        amount += accumulativeRewardOf(msg.sender);
+        _withdrawals[msg.sender] += accumulativeRewardOf(msg.sender);
+        delete stakeData[msg.sender];
 
         ugvToken.transfer(msg.sender, amount);
 
         emit Unstaked(msg.sender, amount);
     }
 
-    function unstake(uint256 amount) external {
-        require(amount > 0, "Unstaking amount could not be zero");
-        require(amount <= stakedAmounts[msg.sender], "User's stake is less than amount");
+    // function unstake(uint256 amount) external {
+    //     require(amount > 0, "Unstaking amount could not be zero");
+    //     require(amount <= stakedAmounts[msg.sender], "User's stake is less than amount");
         
-        stakedAmounts[msg.sender] -= amount;
-        _magnifiedRewardCorrections[msg.sender] += int256(_magnifiedRewardPerStake * amount);
-        allStakes -= amount;
+    //     stakedAmounts[msg.sender] -= amount;
+    //     totalStaked -= amount;
         
-        ugvToken.transfer(msg.sender, amount);
+    //     ugvToken.transfer(msg.sender, amount);
 
-        emit Unstaked(msg.sender, amount);
-    }
+    //     emit Unstaked(msg.sender, amount);
+    // }
 
-    function accumulativeRewardOf(address stakeholder) public view returns(uint256) {
-        return uint256(int256(stakedAmounts[stakeholder] * _magnifiedRewardPerStake) 
-                       + _magnifiedRewardCorrections[stakeholder]) / _magnitude;
-    }
+    // function accumulativeRewardOf(address stakeholder) public view returns (uint256) {
+    //     return uint256(int256(stakedAmounts[stakeholder] * _magnifiedRewardPerStake) 
+    //                    + _magnifiedRewardCorrections[stakeholder]) / _magnitude;
+    // }
 
-    function withdrawnRewardOf(address stakeholder) public view returns(uint256) {
+    function withdrawnRewardOf(address stakeholder) public view returns (uint256) {
         return _withdrawals[stakeholder];
     }
 
-    function withdrawableRewardOf(address stakeholder) public view returns(uint256) {
-        return accumulativeRewardOf(stakeholder) - withdrawnRewardOf(stakeholder);
+    function withdrawableRewardOf(address stakeholder) public view returns (uint256) {
+        return accumulativeRewardOf(stakeholder);
+        //return accumulativeRewardOf(stakeholder) - withdrawnRewardOf(stakeholder);
+    }
+
+    function accumulativeRewardOf(address stakeholder) public view returns (uint256) {
+        StakeData memory _stakeData = stakeData[stakeholder];
+        return _stakeData.reward + 
+            (block.timestamp - _stakeData.start) * _stakeData.APY / SECONDS_IN_YEAR;
     }
 
     function withdrawReward() external {
+        StakeData memory _stakeData = stakeData[msg.sender];
+        require(
+            block.timestamp >= _stakeData.lastWithdrawal + 1 weeks, 
+            "Last withdrawal was this week"
+        );
         uint256 withdrawable = withdrawableRewardOf(msg.sender);
 
         require(withdrawable > 0, "Nothing to withdraw");
 
-        ugvToken.transfer(msg.sender, withdrawable);
+        stakeData[msg.sender].lastWithdrawal = block.timestamp;
+        stakeData[msg.sender].reward = 0;
         _withdrawals[msg.sender] += withdrawable;
+        ugvToken.transfer(msg.sender, withdrawable);
+
+        emit RewardWithdrawn(msg.sender, withdrawable);
     }
 
     function distribute(uint256 amount) external {
         require(msg.sender == stakingWallet, "Only ERM can call distribute");
 
-        if (amount > 0 && allStakes > 0) {
-            _magnifiedRewardPerStake += (_magnitude * amount) / allStakes;
+        if (amount > 0 && totalStaked > 0) {
             emit DividendsDistributed(amount);
         }
     }
