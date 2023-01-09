@@ -121,23 +121,6 @@ contract UGVStaking {
         emit Unstaked(msg.sender, amount);
     }
 
-    // function unstake(uint256 amount) external {
-    //     require(amount > 0, "Unstaking amount could not be zero");
-    //     require(amount <= stakedAmounts[msg.sender], "User's stake is less than amount");
-        
-    //     stakedAmounts[msg.sender] -= amount;
-    //     totalStaked -= amount;
-        
-    //     ugvToken.transfer(msg.sender, amount);
-
-    //     emit Unstaked(msg.sender, amount);
-    // }
-
-    // function accumulativeRewardOf(address stakeholder) public view returns (uint256) {
-    //     return uint256(int256(stakedAmounts[stakeholder] * _magnifiedRewardPerStake) 
-    //                    + _magnifiedRewardCorrections[stakeholder]) / _magnitude;
-    // }
-
     function withdrawnRewardOf(address stakeholder) public view returns (uint256) {
         return _withdrawals[stakeholder];
     }
