@@ -5,8 +5,9 @@ import abiJSON from './abi.json';
 
 async function main() {
   const ycoAddress = "0x3D0293f06daF4311B482564330D57C8Db6C10893";
-  const ycoABI = abiJSON.abi;
+  const erc20ABI = abiJSON.abi;
   const provider = ethers.providers.getDefaultProvider("mainnet");
+  const ycoContract = new ethers.Contract(ycoAddress, erc20ABI, provider);
   // const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
   let holders: Array<String> = [];
   let i = 0;
@@ -16,7 +17,6 @@ async function main() {
     console.log(`Line from file: ${line}`);
     i++;
   });
-  const ycoContract = new ethers.Contract(ycoAddress, ycoABI, provider);
   console.log("Balances:");
   let balances: Array<BigNumber> = [];
   for (i = 0; i < holders.length; i++) {
