@@ -9,7 +9,7 @@ async function main() {
   const provider = ethers.providers.getDefaultProvider("mainnet");
   const ycoContract = new ethers.Contract(ycoAddress, erc20ABI, provider);
   // const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
-  let holders: Array<String> = [];
+  let holders: Array<string> = [];
   let i = 0;
   let allFileContents = readFileSync("./holders.txt");
   allFileContents.toString().split(/\r?\n/).forEach(line =>  {
@@ -19,9 +19,13 @@ async function main() {
   });
   console.log("Balances:");
   let balances: Array<BigNumber> = [];
+  let code;
   for (i = 0; i < holders.length; i++) {
-    balances[i] = await ycoContract.balanceOf(holders[i]);
-    console.log(`${holders[i]}: ${balances[i]} YCO`);
+    code = await ethers.provider.getCode(holders[i]);
+    if (code === "0x") {
+      balances[i] = await ycoContract.balanceOf(holders[i]);
+      console.log(`${holders[i]}: ${balances[i]} YCO`);
+    }
     await sleep(3000);
   }
   console.log("Balances requested");
