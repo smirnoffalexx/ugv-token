@@ -9,6 +9,7 @@ async function main() {
   const erc20ABI = abiJSON.abi;
   const provider = ethers.providers.getDefaultProvider("mainnet");
   const ycoContract = new ethers.Contract(ycoAddress, erc20ABI, provider);
+  console.log("Network:", await provider.getNetwork());
   // const signer = new ethers.Wallet(process.env.PRIVATE_KEY!, provider);
   let holders: Array<string> = [];
   let i = 0;
