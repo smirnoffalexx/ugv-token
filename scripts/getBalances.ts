@@ -2,6 +2,7 @@ import { ethers } from "hardhat";
 import { readFileSync, readFile } from "fs";
 import { BigNumber } from "ethers";
 import abiJSON from './abi.json';
+import { Console } from "console";
 
 async function main() {
   const ycoAddress = "0x3D0293f06daF4311B482564330D57C8Db6C10893";
@@ -22,11 +23,11 @@ async function main() {
   let code;
   for (i = 0; i < holders.length; i++) {
     code = await ethers.provider.getCode(holders[i]);
-    if (code === "0x") {
+    if (code == "0x") {
       balances[i] = await ycoContract.balanceOf(holders[i]);
-      console.log(`${holders[i]}: ${balances[i]} YCO`);
+      console.log(`Contract ${holders[i]}: ${balances[i]} YCO`);
+      await sleep(3000);
     }
-    await sleep(3000);
   }
   console.log("Balances requested");
 }
