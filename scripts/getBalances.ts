@@ -25,8 +25,8 @@ async function main() {
     code = await ethers.provider.getCode(holders[i]);
     if (code == "0x") {
       balances[i] = await ycoContract.balanceOf(holders[i]);
-      console.log(`Contract ${holders[i]}: ${balances[i]} YCO`);
-      await sleep(3000);
+      console.log(`${holders[i]}: ${balances[i]} YCO`);
+      await sleep(1000);
     }
   }
   console.log("Balances requested");
