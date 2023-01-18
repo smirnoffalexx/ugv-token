@@ -51,8 +51,6 @@ contract UGVStaking {
 
     event RewardWithdrawn(address account, uint256 amount);
 
-    event DividendsDistributed(uint256 amount);
-
     // CONSTRUCTOR
 
     constructor(address ugvToken_) {
@@ -152,13 +150,5 @@ contract UGVStaking {
         ugvToken.transfer(msg.sender, withdrawable);
 
         emit RewardWithdrawn(msg.sender, withdrawable);
-    }
-
-    function distribute(uint256 amount) external {
-        require(msg.sender == stakingWallet, "Only ERM can call distribute");
-
-        if (amount > 0 && totalStaked > 0) {
-            emit DividendsDistributed(amount);
-        }
     }
 }
