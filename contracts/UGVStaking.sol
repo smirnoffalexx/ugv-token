@@ -28,8 +28,6 @@ contract UGVStaking {
 
     IERC20 public ugvToken;
 
-    address public stakingWallet;
-
     uint256 public totalStaked;
 
     mapping(address => uint256) internal _withdrawals;
