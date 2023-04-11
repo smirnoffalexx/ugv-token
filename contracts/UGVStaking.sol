@@ -30,8 +30,6 @@ contract UGVStaking {
 
     address public stakingWallet;
 
-    mapping(address => uint256) public stakedAmounts;
-
     uint256 public totalStaked;
 
     mapping(address => uint256) internal _withdrawals;
