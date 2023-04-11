@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: MIT
 
-pragma solidity ^0.8.4;
+pragma solidity 0.8.17;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
@@ -14,11 +14,6 @@ contract UGVStaking {
         Free,
         Partial,
         Maxima
-    }
-
-    struct LockedBalance {
-        uint256 amount;
-        uint256 duration;
     }
 
     struct StakeData {
