@@ -114,11 +114,6 @@ contract UGVStaking {
         return _withdrawals[stakeholder];
     }
 
-    function withdrawableRewardOf(address stakeholder) public view returns (uint256) {
-        return accumulativeRewardOf(stakeholder);
-        //return accumulativeRewardOf(stakeholder) - withdrawnRewardOf(stakeholder);
-    }
-
     function accumulativeRewardOf(address stakeholder) public view returns (uint256) {
         StakeData memory _stakeData = stakeData[stakeholder];
         return _stakeData.reward + 
@@ -131,7 +126,7 @@ contract UGVStaking {
             block.timestamp >= _stakeData.lastWithdrawal + 1 weeks, 
             "Last withdrawal was this week"
         );
-        uint256 withdrawable = withdrawableRewardOf(msg.sender);
+        uint256 withdrawable = accumulativeRewardOf(msg.sender);
 
         require(withdrawable > 0, "Nothing to withdraw");
 
